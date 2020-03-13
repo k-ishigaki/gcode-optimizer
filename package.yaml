@@ -1,0 +1,20 @@
+name:                haskell-template
+version:             0.1.0.0
+#synopsis:
+#description:
+homepage:            https://k-ishigaki.github.io/
+license:             MIT
+author:              Kazuki Ishigaki
+maintainer:          k-ishigaki@frontier.hokudai.ac.jp
+copyright:           2020 Kazuki Ishigaki
+category:            Command Line Tool
+extra-source-files:
+- README.md
+
+dependencies:
+  - base >= 4.7 && < 5
+
+executables:
+  haskell-template:
+    source-dirs:      src
+    main:             Main.hs
