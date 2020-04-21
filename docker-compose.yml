@@ -32,6 +32,8 @@ services:
     git:
         build:
             context: ./git-docker
+            args:
+                - EXTRA_PACKAGES=""
 
     docker-langserver:
         image: rcjsuen/docker-langserver
