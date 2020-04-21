@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/k-ishigaki/hie-docker.git
 	branch = master
-	commit = 126b79e393225a0512791b607413657b3e2ddb7d
-	parent = dde0d09737b2f0d04e659a6d874a8aa8d301152d
+	commit = cdc84335cd2dd6b4451ac7f6a0d017ec10526b5b
+	parent = 6aee47a487d5946da69226a641b42f7a935ea6ca
 	method = merge
 	cmdver = 0.4.1
