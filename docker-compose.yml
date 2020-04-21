@@ -1,31 +1,42 @@
 version: "3"
 services:
-    hie-docker:
+    dispatcher:
         build:
-            context: ./hie-docker
+            context: ./docker-dispatcher
+            args:
+                - CONTAINER_NAME=${COMPOSE_PROJECT_NAME}_dispatcher_1
+                - CONTAINER_COMMANDS=
+                    nvim@${COMPOSE_PROJECT_NAME}_neovim
+                    git@${COMPOSE_PROJECT_NAME}_git
+                    stack@${COMPOSE_PROJECT_NAME}_haskell
+                    hie-wrapper@${COMPOSE_PROJECT_NAME}_haskell
+                    /docker-langserver/bin/docker-langserver@${COMPOSE_PROJECT_NAME}_docker-langserver
         volumes:
-            - ./:/tmp/project_root
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /usr/local/bin
+            - ./:/root/project_root
+            - ./coc-settings.json:/root/.config/nvim/coc-settings.json
+        environment:
+            - USER_ID=1000
+            - GROUP_ID=1000
         stdin_open: true
         entrypoint: sh
+        working_dir: /root/project_root
 
-    docker-langserver:
-        image: rcjsuen/docker-langserver
-        volumes:
-            - ./:/tmp/project_root
-        stdin_open: true
-        entrypoint: sh
-
-    main:
+    neovim:
         build:
             context: ./neovim-docker
             args:
-                cmds:
-                    ${COMPOSE_PROJECT_NAME}_hie-docker_1:hie-wrapper
-                    ${COMPOSE_PROJECT_NAME}_hie-docker_1:stack
-                    ${COMPOSE_PROJECT_NAME}_docker-langserver_1:/docker-langserver/bin/docker-langserver
-        volumes:
-            - ./:/tmp/project_root
-            - /var/run/docker.sock:/var/run/docker.sock
-            - ./coc-settings.json:/home/user/.config/nvim/coc-settings.json
-        stdin_open: true
-        working_dir: /tmp/project_root
+                - EXTRA_PACKAGES=""
+
+    git:
+        build:
+            context: ./git-docker
+
+    docker-langserver:
+        image: rcjsuen/docker-langserver
+        entrypoint: sh
+
+    haskell:
+        build:
+            context: ./hie-docker
