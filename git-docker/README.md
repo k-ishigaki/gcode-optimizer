@@ -37,6 +37,6 @@ Put a shell script file (`git`) to a directory included in PATH.
 
 ```Shell
 #!/bin/sh -e
-docker run --rm -it -v $HOME/.gitconfig:/root/.gitconfig -v $(pwd):/git -w /git k-ishigaki/git "$*"
+docker run --rm -it -v $HOME/.gitconfig:/root/.gitconfig -v $(pwd):/git -w /git k-ishigaki/git "$@"
 ```
 Then a git command available.
