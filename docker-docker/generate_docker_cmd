@@ -1,0 +1,42 @@
+#!/bin/bash -e
+function output_cmd () {
+    local arg=( `echo $2 | tr -s '@' ' '`)
+    if [ ${#arg[@]} -ne 2 ]; then
+        echo 'argument format is not correct!' 1>&2
+        echo 'format="command_path@image_tag_name"' 1>&2
+        exit 1
+    fi
+    local command_path=${arg[0]}
+    local command_name=`basename ${arg[0]}`
+    local image_tag_name=${arg[1]}
+    { \
+        echo '#!/bin/sh -e'; \
+        echo 'path_tmp=$PATH'; \
+        echo 'export PATH=`echo $PATH | sed -e '"'"'s/\/usr\/local\/bin://g'"'"'`'; \
+        echo 'local_cmd=`which '"${command_name}"' || true`'; \
+        echo 'export PATH=${path_tmp}'; \
+        echo 'if [ ! -z "${local_cmd}" ]; then'; \
+        echo '    ${local_cmd} "$@"'; \
+        echo 'elif [ -t 1 ]; then'; \
+        echo '    docker run --rm -it --volumes-from '"$1"' -w $(pwd) -e USER_ID=${USER_ID} -e GROUP_ID=${GROUP_ID} '"${image_tag_name} ${command_path}"' "$@"'; \
+        echo 'else'; \
+        echo '    docker run --rm -i --volumes-from '"$1"' -w $(pwd) -e USER_ID=${USER_ID} -e GROUP_ID=${GROUP_ID} '"${image_tag_name} ${command_path}"' "$@"'; \
+        echo 'fi'; \
+    } > /usr/local/bin/${command_name}
+    chmod +x /usr/local/bin/${command_name}
+}
+
+if [ $# -eq 0 ]; then
+    echo 'no arguments is specified!' 1>&2
+    script_name=${0##*/}
+    echo 'usage="'"${script_name}"' container_name1:command_path1 container_name2:command_path2 ..."' 1>&2
+    exit 1
+fi
+
+container_name=$1
+args=${@:2}
+echo "container_name = ${container_name}, arguments = ${args}"
+
+for arg in ${args[@]}; do
+    output_cmd $1 ${arg}
+done
