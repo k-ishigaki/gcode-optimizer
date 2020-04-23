@@ -1,10 +1,10 @@
 version: "3"
 services:
-    dispatcher:
+    docker:
         build:
-            context: ./docker-dispatcher
+            context: ./docker-docker
             args:
-                - CONTAINER_NAME=${COMPOSE_PROJECT_NAME}_dispatcher_1
+                - CONTAINER_NAME=${COMPOSE_PROJECT_NAME}_docker_1
                 - CONTAINER_COMMANDS=
                     nvim@${COMPOSE_PROJECT_NAME}_neovim
                     git@${COMPOSE_PROJECT_NAME}_git
