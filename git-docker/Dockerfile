@@ -1,9 +1,7 @@
-ARG EXTRA_PACKAGES="nvim"
-
 FROM alpine
 LABEL maintainer="Kazuki Ishigaki<k-ishigaki@frontier.hokudai.ac.jp>"
 
-RUN apk add --no-cache bash git git-perl less su-exec ${EXTRA_PACKAGES}
+RUN apk add --no-cache bash git git-perl less shadow sudo
 
 # install git-subrepo
 SHELL [ "/bin/bash", "-c" ]
@@ -11,22 +9,24 @@ RUN git clone https://github.com/ingydotnet/git-subrepo && \
     echo 'source /git-subrepo/.rc' >> ~/.bashrc
 ENV BASH_ENV ~/.bashrc
 
-# allow normal user to use /root directory
-RUN chmod +rx ${HOME}
-
 COPY .gitconfig /root/.gitconfig
 
-RUN echo 'export HOME=/root >> .profile'
-ENV USER_ID 0
-ENV GROUP_ID 0
-RUN { \
-	echo '#!/bin/bash -e'; \
-	echo 'if [ ${USER_ID} -ne 0 ]; then'; \
-	echo '    addgroup -g ${GROUP_ID} -S group'; \
-	echo '    adduser -h /root -G group -S -D -H -u ${USER_ID} user'; \
-	echo 'fi'; \
-	echo 'exec su-exec ${USER_ID}:${GROUP_ID} "$@"'; \
-	} > /entrypoint && chmod +x /entrypoint
+ENV GIT_SUBREPO_ROOT /git-subrepo
+ENV MANPATH /git-subrepo/man:
+ENV PATH /git-subrepo/lib:$PATH
+
+RUN find ${HOME} | xargs -n 50 -P 4 chmod o+rwx
+
+RUN echo "developer ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/developer && \
+    chmod u+s `which groupadd` `which useradd` && \
+    { \
+    echo '#!/bin/sh -e'; \
+    echo 'getent group `id -g` || groupadd --gid `id -g` developer'; \
+    echo 'getent passwd `id -u` || useradd --uid `id -u` --gid `id -g` --home-dir /root developer'; \
+    echo 'sudo find /root -maxdepth 1 | xargs sudo chown `id -u`:`id -g`'; \
+    echo 'exec "$@"'; \
+    } > /entrypoint && chmod +x /entrypoint
 ENTRYPOINT [ "/entrypoint" ]
+ENV HOME=/root
 
 CMD ["git"]

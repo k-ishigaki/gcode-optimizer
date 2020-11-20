@@ -14,7 +14,7 @@ docker build -t k-ishigaki/git .
 ## Use git command
 
 ```Shell
-docker run --rm -it -v ${HOME}/.gitconfig:/root/.gitconfig -v $(pwd):/git -w /git -e USER_ID=$(id -u) -e GROUP_ID=$(id -g) k-ishigaki/git git ...
+docker run --rm -it -v ${HOME}/.gitconfig:/root/.gitconfig -v $(pwd):/root/workspace -w /root/workspace -u $(id -u):$(id -g) k-ishigaki/git git ...
 ```
 
 NOTE:
@@ -27,7 +27,7 @@ NOTE:
 Put a batch file (`git.bat`) to a directory included in PATH.
 
 ```Batchfile
-@docker run --rm -it -v %USERPROFILE%\.gitconfig:/root/.gitconfig -v %cd%:/git -w /git k-ishigaki/git git %*
+@docker run --rm -it -v %USERPROFILE%\.gitconfig:/root/.gitconfig -v %cd%:/root/workspace -w /root/workspace k-ishigaki/git git %*
 ```
 Then a git command available.
 
@@ -37,6 +37,6 @@ Put a shell script file (`git`) to a directory included in PATH.
 
 ```Shell
 #!/bin/sh -e
-docker run --rm -it -v $HOME/.gitconfig:/root/.gitconfig -v $(pwd):/git -w /git k-ishigaki/git git "$@"
+docker run --rm -it -v $HOME/.gitconfig:/root/.gitconfig -v $(pwd):/root/workspace -w /root/workspace k-ishigaki/git git "$@"
 ```
 Then a git command available.
