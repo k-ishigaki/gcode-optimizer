@@ -1,44 +1,58 @@
-version: "3"
+version: "3.4"
+
+x-common-options: &common-options
+    depends_on:
+        - docker
+    user: ${UID}:${GID}
+    environment:
+        - "PREPARE_COMMAND=find /root/shared_bin/* | xargs -I {} basename {} | xargs -I {} sh -c 'command -v {} || sudo cp /root/shared_bin/{} /usr/local/bin/{}'"
+    volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        - ./:/root/project_root
+        - shared_bin:/root/shared_bin
+        - tmp:/tmp
+    working_dir: /root/project_root
+    command: sh -c 'eval $${PREPARE_COMMAND} && while sleep 1000; do :; done'
+
 services:
+    scripts:
+        image: bash
+        volumes:
+            - shared_bin:/scripts
+            - ./generate_docker_cmd.sh:/generate_docker_cmd.sh
+        command: >
+            /generate_docker_cmd.sh /scripts
+            nvim@${COMPOSE_PROJECT_NAME}_neovim_1
+            git@${COMPOSE_PROJECT_NAME}_git_1
+            stack@${COMPOSE_PROJECT_NAME}_haskell_1
+            haskell-language-server-wrapper@${COMPOSE_PROJECT_NAME}_haskell_1
+
     docker:
         build:
             context: ./docker-docker
-            args:
-                - CONTAINER_NAME=${COMPOSE_PROJECT_NAME}_docker_1
-                - CONTAINER_COMMANDS=
-                    nvim@${COMPOSE_PROJECT_NAME}_neovim
-                    git@${COMPOSE_PROJECT_NAME}_git
-                    stack@${COMPOSE_PROJECT_NAME}_haskell
-                    hie-wrapper@${COMPOSE_PROJECT_NAME}_haskell
-                    /docker-langserver/bin/docker-langserver@${COMPOSE_PROJECT_NAME}_docker-langserver
+        depends_on:
+            - scripts
         volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-            - /usr/local/bin
-            - ./:/root/project_root
-            - ./coc-settings.json:/root/.config/nvim/coc-settings.json
-        environment:
-            - USER_ID=1000
-            - GROUP_ID=1000
-        stdin_open: true
-        entrypoint: sh
-        working_dir: /root/project_root
+            - shared_bin:/tmp/shared_bin
+        command: sh -c "cp -f `which docker` /tmp/shared_bin/docker && while sleep 1000; do :; done"
 
     neovim:
         build:
             context: ./neovim-docker
             args:
-                - EXTRA_PACKAGES=""
+                EXTRA_COC_PLUGINS: coc-docker
+        <<: *common-options
 
     git:
         build:
             context: ./git-docker
-            args:
-                - EXTRA_PACKAGES=""
-
-    docker-langserver:
-        image: rcjsuen/docker-langserver
-        entrypoint: sh
+        <<: *common-options
 
     haskell:
         build:
-            context: ./hie-docker
+            context: ./hls-docker
+        <<: *common-options
+
+volumes:
+    shared_bin:
+    tmp:
