@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/k-ishigaki/hls-docker
+	branch = main
+	commit = d3db9ccc1e109da7ddb1db8c401305281b2621fa
+	parent = 138263a75d5588e93a4601c886722534e9481905
+	method = merge
+	cmdver = 0.4.2
