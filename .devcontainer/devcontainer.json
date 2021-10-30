@@ -1,0 +1,30 @@
+// For format details, see https://aka.ms/vscode-remote/devcontainer.json or this file's README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.134.1/containers/docker-existing-docker-compose
+// If you want to run as a non-root user in the container, see .devcontainer/docker-compose.yml.
+{
+	"name": "Existing Docker Compose (Extend)",
+
+	// Update the 'dockerComposeFile' list if you have more compose files or use different names.
+	"dockerComposeFile": [
+		"../docker-compose.yml",
+		"../docker-compose.override.yml",
+	],
+
+	// The 'service' property is the name of the service for the container that VS Code should
+	// use.
+	"service": "haskell",
+
+	// The optional 'workspaceFolder' property is the path VS Code should open by default when
+	// connected.
+	"workspaceFolder": "/workspaces/haskell-template",
+
+	// Set *default* container specific settings.json values on container create.
+	"settings": {
+		"terminal.integrated.defaultProfile.linux": "fish",
+	},
+	
+	// Add the IDs of extensions you want installed when the container is created.
+	"extensions": [
+        "haskell.haskell",
+	],
+}

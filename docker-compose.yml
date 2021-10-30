@@ -1,58 +1,95 @@
 version: "3.4"
 
+volumes:
+    tmp:
+    vscode-server:
+
 x-common-options: &common-options
-    depends_on:
-        - docker
-    user: ${UID}:${GID}
+    user: ${USER_ID:-0}:${GROUP_ID:-0}
     environment:
-        - "PREPARE_COMMAND=find /root/shared_bin/* | xargs -I {} basename {} | xargs -I {} sh -c 'command -v {} || sudo cp /root/shared_bin/{} /usr/local/bin/{}'"
+        PREPARE_COMMAND: |
+            # prepare docker command
+            if ! command -v docker 2&> /dev/null; then
+                until /tmp/shared_bin/docker version > /dev/null; do sleep 1; done
+                sudo ln -sf /tmp/shared_bin/docker /usr/local/bin/
+            elif ! readlink `which docker`; then
+                mkdir -p /tmp/shared_bin
+                cp -f `which docker` /tmp/shared_bin/docker
+            fi
+
+            # make .env
+            project_folder_name=`docker inspect --format='{{ index .Config.Labels "vsch.local.repository.folder"}}' $$HOSTNAME`
+            container_volume_name=`docker inspect --format='{{ index .Config.Labels "vsch.local.repository.volume"}}' $$HOSTNAME`
+            if [ ! -z "$$project_folder_name" ]; then
+                cd /workspaces/$$project_folder_name
+                { \
+                    echo "# AUTO GENERATED FILE"; \
+                    echo "# DO NOT MODIFY THIS FILE"; \
+                    echo "USER_ID=$$(ls -nld . | awk '{print $$3}')"; \
+                    echo "GROUP_ID=$$(ls -nld . | awk '{print $$4}')"; \
+                    if [ -n "$$container_volume_name" ]; then \
+                        echo "WORKSPACE_ROOT=/var/lib/docker/volumes/$$container_volume_name/_data"; \
+                    fi; \
+                    echo "PROJECT_FOLDER=$$project_folder_name"; \
+                    echo "COMPOSE_PROJECT_NAME=${USER}${USERNAME}_$${container_volume_name:-local}_$${project_folder_name}"; \
+                } > .env
+                sudo chown `id -u`:`id -g` .env
+            fi
+
+            # exit if the project name is undetermined
+            if [ -z "${COMPOSE_PROJECT_NAME}" ]; then
+                exit 1
+                docker rm -f $$HOSTNAME
+            fi
+
+            # prepare other commands
+            container_commands='
+                docker-compose@docker
+                nvim@neovim
+                tmux@tmux
+                git@git
+                git-shell@git
+                fish@tmux
+                haskell-language-server-wrapper@haskell
+            '
+            for container_command in `echo $$container_commands | tr -s ' ' '\n'`; do
+                command_name=`echo $$container_command | cut -d '@' -f 1`
+                service_name=`echo $$container_command | cut -d '@' -f 2`
+
+                if command -v $$command_name; then continue; fi
+
+                { \
+                    echo '#!/bin/sh -e'; \
+                    echo 'if [ -t 1 ]; then tty_option=-t; fi'; \
+                    echo 'exec docker exec -i $$tty_option -w $$PWD '"${COMPOSE_PROJECT_NAME}_$${service_name}_1 $${command_name}"' "$$@"'; \
+                } | sudo tee /usr/local/bin/$$command_name
+                sudo chmod +x /usr/local/bin/$$command_name
+            done
     volumes:
         - /var/run/docker.sock:/var/run/docker.sock
-        - ./:/root/project_root
-        - shared_bin:/root/shared_bin
+        - ${WORKSPACE_ROOT:-../}:/workspaces
         - tmp:/tmp
-    working_dir: /root/project_root
-    command: sh -c 'eval $${PREPARE_COMMAND} && while sleep 1000; do :; done'
+        - vscode-server:/root/.vscode-server/bin
+    working_dir: /workspaces/${PROJECT_FOLDER}
+    command: sh -cex 'eval "$${PREPARE_COMMAND}" && sleep infinity'
 
 services:
-    scripts:
-        image: bash
-        volumes:
-            - shared_bin:/scripts
-            - ./generate_docker_cmd.sh:/generate_docker_cmd.sh
-        command: >
-            /generate_docker_cmd.sh /scripts
-            nvim@${COMPOSE_PROJECT_NAME}_neovim_1
-            git@${COMPOSE_PROJECT_NAME}_git_1
-            stack@${COMPOSE_PROJECT_NAME}_haskell_1
-            haskell-language-server-wrapper@${COMPOSE_PROJECT_NAME}_haskell_1
-
     docker:
-        build:
-            context: ./docker-docker
-        depends_on:
-            - scripts
-        volumes:
-            - shared_bin:/tmp/shared_bin
-        command: sh -c "cp -f `which docker` /tmp/shared_bin/docker && while sleep 1000; do :; done"
+        image: splascope/docker:1.1.0
+        <<: *common-options
 
     neovim:
-        build:
-            context: ./neovim-docker
-            args:
-                EXTRA_COC_PLUGINS: coc-docker
+        image: splascope/neovim:1.0.0
         <<: *common-options
 
     git:
-        build:
-            context: ./git-docker
+        image: splascope/git:1.0.0
+        <<: *common-options
+
+    tmux:
+        image: splascope/tmux:1.0.0
         <<: *common-options
 
     haskell:
-        build:
-            context: ./hls-docker
+        build: ./.devcontainer/hls-docker
         <<: *common-options
-
-volumes:
-    shared_bin:
-    tmp:
