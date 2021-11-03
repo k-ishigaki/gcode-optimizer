@@ -3,4 +3,4 @@ version: "3.4"
 services:
     neovim:
         volumes:
-            - ./.devcontainer/coc-settings.json:/root/.config/nvim/coc-settings.json
+            - ${WORKSPACE_ROOT:-../}/${PROJECT_FOLDER}/.devcontainer/coc-settings.json:/root/.config/nvim/coc-settings.json
