@@ -50,6 +50,7 @@ x-common-options: &common-options
                 git-shell@git
                 fish@tmux
                 haskell-language-server-wrapper@haskell
+                stack@haskell
             '
             for container_command in `echo $$container_commands | tr -s ' ' '\n'`; do
                 command_name=`echo $$container_command | cut -d '@' -f 1`
