@@ -38,7 +38,6 @@ x-common-options: &common-options
 
             # exit if the project name is undetermined
             if [ -z "${COMPOSE_PROJECT_NAME}" ]; then
-                exit 1
                 docker rm -f $$HOSTNAME
             fi
 
