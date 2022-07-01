@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/k-ishigaki/hls-docker
 	branch = main
-	commit = d69e5a7f27257eddeaab95e5f79f465db56779c5
-	parent = 5a885cefd868a183d266635862a7c049a5f72605
+	commit = 82b3844b3d607e3216b582e523207f9fa62f6d94
+	parent = e3e0d7f3f9d71dd1170842cc93bdd8e3b11a6994
 	method = merge
-	cmdver = 0.4.2
+	cmdver = 0.4.3
