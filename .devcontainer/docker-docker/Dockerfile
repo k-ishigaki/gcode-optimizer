@@ -2,7 +2,8 @@ FROM alpine:3.13 as downloader
 
 RUN apk --no-cache add curl
 
-RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-19.03.9.tgz \
+ARG DOCKER_VERSION=20.10.11
+RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-$DOCKER_VERSION.tgz \
     | tar -xz -C /usr/bin --strip=1 docker/docker
 
 FROM alpine:3.13
