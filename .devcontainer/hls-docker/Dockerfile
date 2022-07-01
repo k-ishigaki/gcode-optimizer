@@ -4,6 +4,7 @@ LABEL maintainer "Kazuki Ishigaki <k-ishigaki@frontier.hokudai.ac.jp>"
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
+    git \
     haskell-stack \
     sudo \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -13,8 +14,8 @@ RUN stack upgrade --binary-only
 RUN curl -fLo /usr/local/bin/ghcup \
     https://downloads.haskell.org/~ghcup/x86_64-linux-ghcup && \
     chmod +x /usr/local/bin/ghcup && \
-    ghcup install ghc 8.6.5 && \
-    ghcup set 8.6.5 && \
+    ghcup install ghc 9.0.2 && \
+    ghcup set 9.0.2 && \
     ghcup install cabal && \
     ghcup install hls
 
