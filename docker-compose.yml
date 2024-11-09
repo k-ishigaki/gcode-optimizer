@@ -2,55 +2,32 @@ version: "3.4"
 
 volumes:
     tmp:
-    vscode-server:
 
 x-common-options: &common-options
-    user: ${USER_ID:-0}:${GROUP_ID:-0}
+    user: ${USER_ID}:${GROUP_ID}
     environment:
         PREPARE_COMMAND: |
-            # prepare docker command
+            # fix permissions
+            sudo chown `id -u`:`id -g` /root/.vscode-server/bin
+            sudo chown `id -u`:`id -g` /var/run/docker.sock
+
+            # wait for docker binary
             if ! command -v docker 2&> /dev/null; then
                 until /tmp/shared_bin/docker version > /dev/null; do sleep 1; done
-                sudo ln -sf /tmp/shared_bin/docker /usr/local/bin/
-            elif ! readlink `which docker`; then
-                mkdir -p /tmp/shared_bin
-                cp -f `which docker` /tmp/shared_bin/docker
             fi
 
-            # make .env
-            project_folder_name=`docker inspect --format='{{ index .Config.Labels "vsch.local.repository.folder"}}' $$HOSTNAME`
-            container_volume_name=`docker inspect --format='{{ index .Config.Labels "vsch.local.repository.volume"}}' $$HOSTNAME`
-            if [ ! -z "$$project_folder_name" ]; then
-                cd /workspaces/$$project_folder_name
-                { \
-                    echo "# AUTO GENERATED FILE"; \
-                    echo "# DO NOT MODIFY THIS FILE"; \
-                    echo "USER_ID=$$(ls -nld . | awk '{print $$3}')"; \
-                    echo "GROUP_ID=$$(ls -nld . | awk '{print $$4}')"; \
-                    if [ -n "$$container_volume_name" ]; then \
-                        echo "WORKSPACE_ROOT=/var/lib/docker/volumes/$$container_volume_name/_data"; \
-                    fi; \
-                    echo "PROJECT_FOLDER=$$project_folder_name"; \
-                    echo "COMPOSE_PROJECT_NAME=$${container_volume_name:-local}_$${project_folder_name}"; \
-                } > .env
-                sudo chown `id -u`:`id -g` .env
-            fi
-
-            # exit if the project name is undetermined
-            if [ -z "${COMPOSE_PROJECT_NAME}" ]; then
-                docker rm -f $$HOSTNAME
-            fi
-
-            # prepare other commands
+            # prepare commands
             container_commands='
-                docker-compose@docker
-                nvim@neovim
-                tmux@tmux
+                docker@docker
+                fish@tmux
+                gh@git
                 git@git
                 git-shell@git
-                fish@tmux
+                hadolint@hadolint
                 haskell-language-server-wrapper@haskell
+                nvim@neovim
                 stack@haskell
+                tmux@tmux
             '
             echo "$$container_commands" | while read -r container_command; do
                 command=`echo "$$container_command" | cut -d '@' -f 1`
@@ -62,35 +39,63 @@ x-common-options: &common-options
                 { \
                     echo '#!/bin/sh -e'; \
                     echo 'if [ -t 1 ]; then tty_option=-t; fi'; \
-                    echo 'exec docker exec -i $$tty_option -w $$PWD '"${COMPOSE_PROJECT_NAME}_$${service_name}_1 $${command}"' "$$@"'; \
+                    echo 'exec /tmp/shared_bin/docker exec -i $$tty_option -w $$PWD '"${COMPOSE_PROJECT_NAME}-$${service_name}-1 $${command}"' "$$@"'; \
                 } | sudo tee /usr/local/bin/$$command_name
                 sudo chmod +x /usr/local/bin/$$command_name
             done
     volumes:
         - /var/run/docker.sock:/var/run/docker.sock
-        - ${WORKSPACE_ROOT:-../}:/workspaces
+        - ./:/workspaces/${COMPOSE_PROJECT_NAME}
         - tmp:/tmp
-        - vscode-server:/root/.vscode-server/bin
-    working_dir: /workspaces/${PROJECT_FOLDER}
+    working_dir: /workspaces/${COMPOSE_PROJECT_NAME}
     command: sh -cex 'eval "$${PREPARE_COMMAND}" && sleep infinity'
+
+x-common-args: &common-args
+    USER_ID: "${USER_ID}"
+    GROUP_ID: "${GROUP_ID}"
 
 services:
     docker:
-        image: ghcr.io/k-ishigaki/docker-docker:1
+        build:
+            context: .
+            args:
+                BASE_IMAGE: "ghcr.io/k-ishigaki/docker-docker:2.0"
+                <<: *common-args
         <<: *common-options
+        command: >
+            sh -cex 'eval "$${PREPARE_COMMAND}" &&
+            mkdir -p /tmp/shared_bin &&
+            cp -f /usr/bin/docker /tmp/shared_bin/docker &&
+            sleep infinity'
 
-    neovim:
-        image: ghcr.io/k-ishigaki/neovim-docker:1
+    tmux:
+        build:
+            context: .
+            args:
+                BASE_IMAGE: "ghcr.io/k-ishigaki/tmux-docker:2.0"
+                <<: *common-args
         <<: *common-options
 
     git:
-        image: ghcr.io/k-ishigaki/git-docker:1
+        build:
+            context: .
+            args:
+                BASE_IMAGE: "ghcr.io/k-ishigaki/git-docker:2.0"
+                <<: *common-args
         <<: *common-options
 
-    tmux:
-        image: ghcr.io/k-ishigaki/tmux-docker:1
+    neovim:
+        build:
+            context: .
+            args:
+                BASE_IMAGE: "ghcr.io/k-ishigaki/neovim-docker:2.0"
+                <<: *common-args
         <<: *common-options
 
     haskell:
-        build: ./.devcontainer/hls-docker
+        build:
+            context: .
+            args:
+                BASE_IMAGE: "ghcr.io/k-ishigaki/hls-docker:1.3"
+                <<: *common-args
         <<: *common-options

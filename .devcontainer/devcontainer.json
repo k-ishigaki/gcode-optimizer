@@ -12,19 +12,29 @@
 
 	// The 'service' property is the name of the service for the container that VS Code should
 	// use.
-	"service": "haskell",
+	"service": "git",
 
 	// The optional 'workspaceFolder' property is the path VS Code should open by default when
 	// connected.
-	"workspaceFolder": "/workspaces/haskell-template",
-
-	// Set *default* container specific settings.json values on container create.
-	"settings": {
-		"terminal.integrated.defaultProfile.linux": "fish",
-	},
-	
-	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": [
-        "haskell.haskell",
-	],
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"initializeCommand": "${localWorkspaceFolder}/.devcontainer/init.sh",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"terminal.integrated.profiles.linux": {
+					"fish": {
+						"path": "fish",
+						"args": []
+					}
+				},
+				"terminal.integrated.defaultProfile.linux": "fish"
+			},
+			"extensions": [
+				"haskell.haskell",
+				"eamodio.gitlens",
+				"ms-azuretools.vscode-docker",
+				"exiasr.hadolint"
+			]
+		}
+	}
 }
