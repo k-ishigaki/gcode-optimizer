@@ -39,7 +39,8 @@ packages:
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
-# extra-deps: []
+extra-deps:
+- gcodehs-0.1.2.0@sha256:0cc00e6e68cfdbfcff05262ee95bfc594ae6a402d9729881230a62fb34f3e607,3273
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
@@ -67,3 +68,6 @@ system-ghc: true
 
 # Allow different user to run in Docker
 allow-different-user: true
+
+ghc-options:
+  "$locals": -Wall
