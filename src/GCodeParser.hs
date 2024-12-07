@@ -163,7 +163,7 @@ parseComment = do
 parseNoArgumentCommand :: Parser Block
 parseNoArgumentCommand = do
   _ <- optional lineNumber
-  command <- choice (map symbol ["G90", "G17", "G20", "G21", "G54", "G94", "G95", "G49"])
+  command <- choice (map symbol ["G0", "G1", "G2", "G3", "G90", "G17", "G20", "G21", "G54", "G94", "G95", "G49"])
   return $ NoArgumentCommand command
 
 parseToolChange :: Parser Block

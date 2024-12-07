@@ -32,7 +32,7 @@ processLine line = do
   currentState <- get
   let ((result, _), finalState) = runState (runWriterT (runParserT parseProgram "" line)) currentState
   case result of
-    Left err -> return $ Program [Other $ pack $ errorBundlePretty err]
+    Left err -> return $ Program [Other $ pack $ "Error : " ++ errorBundlePretty err]
     Right prog -> do
       put finalState
       return prog
