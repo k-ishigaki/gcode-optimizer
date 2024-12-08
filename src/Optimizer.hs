@@ -12,28 +12,34 @@ initialOptimizerContext = OptimizerContext (Position unset unset unset)
 optimizeProgram :: Program -> State OptimizerContext Program
 optimizeProgram (Program blocks) = do
   optimizedBlocks <- mapM optimizeBlock blocks
-  return $ Program optimizedBlocks
+  return $ Program (concat optimizedBlocks)
 
-optimizeBlock :: Block -> State OptimizerContext Block
+optimizeBlock :: Block -> State OptimizerContext [Block]
 optimizeBlock (Move motion) = do
-  optimizedMotion <- optimizeMotion motion
-  return $ Move optimizedMotion
-optimizeBlock block = return block
+  optimizedMotions <- optimizeMotion motion
+  return $ map Move optimizedMotions
+optimizeBlock block = return [block]
 
-optimizeMotion :: Motion -> State OptimizerContext Motion
+optimizeMotion :: Motion -> State OptimizerContext [Motion]
 optimizeMotion motion = do
   case motion of
     LinearMove (Position x y z) _ -> do
-      Position _ _ prevZ <- gets optimizerContextPosition
+      Position prevX prevY prevZ <- gets optimizerContextPosition
       modify $ \s -> s {optimizerContextPosition = Position x y z}
-      if z == prevZ && z > 0
+      -- Z > 0の平面移動、またはZ > 0への上昇移動をRapidMoveに変更
+      if (z == prevZ && z > 0) || (x == prevX && y == prevY && z > prevZ)
         then do
-          return $ RapidMove (Position x y z)
+          return [RapidMove (Position x y z)]
         else do
-          return motion
+          -- 最大粗切り込みピッチx1.5までのZ軸下降移動をRapidMoveに変更
+          if x == prevX && y == prevY && (prevZ - z) > 0.02 * 1.5
+            then do
+              return [RapidMove (Position x y (z + 0.02 * 1.5)), motion]
+            else do
+              return [motion]
     RapidMove (Position x y z) -> do
       modify $ \s -> s {optimizerContextPosition = Position x y z}
-      return motion
+      return [motion]
     ArcMove (Position x y z) _ _ _ -> do
       modify $ \s -> s {optimizerContextPosition = Position x y z}
-      return motion
+      return [motion]

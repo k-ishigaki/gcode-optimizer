@@ -6,6 +6,7 @@ import AST (Block (ChangeSpindleSpeed, ChangeTool, Comment, MachineCode, Move, N
 import Control.Monad.State.Strict (State, gets, modify, forM)
 import Data.Text (Text, pack)
 import qualified Data.Text as T
+import Text.Printf (printf)
 
 data Context = Context
   { contextLineNumber :: Int,
@@ -89,7 +90,7 @@ generateWaitCommandCode (DelaySeconds seconds) = " G4 P" <> pack (show seconds)
 generateToolLengthCompensationCode :: ToolLengthCompensationDirection -> Double -> Int -> Text
 generateToolLengthCompensationCode direction compensation tool =
   let modeCode = if direction == Forward then " G43" else " G44"
-      compensationCode = " Z" <> pack (show compensation)
+      compensationCode = " Z" <> formatDouble compensation
       toolCode = if tool == 0 then "" else " H" <> pack (show tool)
    in modeCode <> compensationCode <> toolCode
 
@@ -97,14 +98,14 @@ generatePositionCode :: Position -> State Context Text
 generatePositionCode (Position x y z) = do
   Position prevX prevY prevZ <- gets contextPosition
   modify $ \s -> s {contextPosition = Position x y z}
-  let resultX = if x == prevX || x == unset then "" else " X" <> pack (show x)
-  let resultY = if y == prevY || y == unset then "" else " Y" <> pack (show y)
-  let resultZ = if z == prevZ || z == unset then "" else " Z" <> pack (show z)
+  let resultX = if x == prevX || x == unset then "" else " X" <> formatDouble x
+  let resultY = if y == prevY || y == unset then "" else " Y" <> formatDouble y
+  let resultZ = if z == prevZ || z == unset then "" else " Z" <> formatDouble z
   return $ resultX <> resultY <> resultZ
 
 -- 状態を見る必要はないためStateは使わない
 generateCenterOffsetCode :: CenterOffset -> Text
-generateCenterOffsetCode (CenterOffset i j) = " I" <> pack (show i) <> " J" <> pack (show j)
+generateCenterOffsetCode (CenterOffset i j) = " I" <> formatDouble i <> " J" <> formatDouble j
   -- 0の場合は省略可能だが、KitMill用のG-Codeは省略されていないためそのまま出力
   -- let resultI = if i == 0 then "" else " I" <> pack (show i)
   --     resultJ = if j == 0 then "" else " J" <> pack (show j)
@@ -114,5 +115,15 @@ generateSpeedCode :: Speed -> State Context Text
 generateSpeedCode (Speed speed) = do
   Speed prevSpeed <- gets contextSpeed
   modify $ \s -> s {contextSpeed = Speed speed}
-  let result = if speed == prevSpeed || speed == unset then "" else " F" <> pack (show speed)
+  let result = if speed == prevSpeed || speed == unset then "" else " F" <> formatDouble speed
   return result
+
+trimTrailingZeros :: String -> String
+trimTrailingZeros = reverse . dropWhile (== '0') . reverse
+
+formatDouble :: Double -> Text
+formatDouble d
+  | isWhole d = T.pack (show (floor d :: Integer))
+  | otherwise = T.pack (trimTrailingZeros (printf "%.3f" d)) -- 小数点以下の桁数は3
+  where
+    isWhole x = x == fromIntegral (floor x :: Integer)

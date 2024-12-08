@@ -69,7 +69,7 @@ processFile filePath = do
       .| evalStateC initialGeneratorContext (mapMC generateCodeLine) -- 累積状態を持ちながら処理
       .| unlinesC -- 行を結合
       .| encodeUtf8C -- UTF-8にエンコード
-      .| sinkFile (filePath ++ ".out") -- 結果をファイルに書き込む
+      .| sinkFile (filePath ++ ".optimized.cnc") -- 結果をファイルに書き込む
 
 main :: IO ()
 main = do
