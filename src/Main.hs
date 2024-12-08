@@ -25,6 +25,7 @@ import Text.Megaparsec
   )
 import AST (Program (Program), Block (Other))
 import GCodeGenerator (Context, generateGCode, initialGeneratorContext)
+import Optimizer (OptimizerContext, optimizeProgram, initialOptimizerContext)
 
 -- 1行をパースし、状態を更新しつつ処理
 processLine :: (Monad m) => Text -> StateT MoveContext m Program
@@ -36,6 +37,13 @@ processLine line = do
     Right prog -> do
       put finalState
       return prog
+
+optimizeProgramLine :: (Monad m) => Program -> StateT OptimizerContext m Program
+optimizeProgramLine prog = do
+  currentState <- get
+  let (optimizedProgram, finalState) = runState (optimizeProgram prog) currentState
+  put finalState
+  return optimizedProgram
 
 generateCodeLine :: (Monad m) => Program -> StateT Context m Text
 generateCodeLine prog = do
@@ -57,6 +65,7 @@ processFile filePath = do
       .| linesUnboundedC -- 行ごとにストリーム化
       .| mapC trimCRLF -- 改行文字を削除
       .| evalStateC initialContext (mapMC processLine) -- 累積状態を持ちながら処理
+      .| evalStateC initialOptimizerContext (mapMC optimizeProgramLine) -- 累積状態を持ちながら処理
       .| evalStateC initialGeneratorContext (mapMC generateCodeLine) -- 累積状態を持ちながら処理
       .| unlinesC -- 行を結合
       .| encodeUtf8C -- UTF-8にエンコード

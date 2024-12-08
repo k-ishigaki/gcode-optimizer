@@ -3,7 +3,7 @@
 module GCodeGenerator where
 
 import AST (Block (ChangeSpindleSpeed, ChangeTool, Comment, MachineCode, Move, NoArgumentCommand, Other, OtherCommand, ToolLengthCompensation, WaitCommand), CenterOffset (CenterOffset), Delay (DelayMilliseconds, DelaySeconds), Direction (CW), Motion (ArcMove, LinearMove, RapidMove), Position (Position), Program (Program), Speed (Speed), ToolLengthCompensationDirection (Forward), unset)
-import Control.Monad.State.Strict (State, gets, modify)
+import Control.Monad.State.Strict (State, gets, modify, forM)
 import Data.Text (Text, pack)
 import qualified Data.Text as T
 
@@ -29,9 +29,11 @@ generateGCode (Program blocks) = do
       Comment _ -> generateBlockCode block
       Other _ -> generateBlockCode block
       _ -> do
-        lineNumberCode <- generateLineNumberCode
-        codes <- mapM generateBlockCode blocks
-        return $ lineNumberCode <> T.concat codes
+        codes <- forM blocks $ \b -> do
+              lineNumberCode <- generateLineNumberCode
+              code <- generateBlockCode b
+              return $ lineNumberCode <> code
+        return $ T.intercalate "\n" codes
 
 generateLineNumberCode :: State Context Text
 generateLineNumberCode = do
