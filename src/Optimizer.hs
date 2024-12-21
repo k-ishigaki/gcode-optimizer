@@ -1,5 +1,5 @@
 module Optimizer where
-import AST (Program (Program), Position (Position), Motion (LinearMove, RapidMove, ArcMove), Block (Move), unset)
+import AST (Program (Program), Position (Position), Motion (LinearMove, RapidMove, ArcMove), Block (Move), unset, Speed (Speed))
 import Control.Monad.State.Strict (State, gets, modify)
 
 newtype OptimizerContext
@@ -38,8 +38,14 @@ optimizeMotion motion = do
             else do
               return [motion]
     RapidMove (Position x y z) -> do
+      Position prevX prevY prevZ <- gets optimizerContextPosition
       modify $ \s -> s {optimizerContextPosition = Position x y z}
-      return [motion]
+      -- Z > 0の平面移動、またはZ > 0への上昇移動をRapidMoveに変更
+      if (z == prevZ && z > 0) || (x == prevX && y == prevY && z > prevZ)
+        then do
+          return [LinearMove (Position x y z) (Speed 15)]
+        else do
+          return [motion]
     ArcMove (Position x y z) _ _ _ -> do
       modify $ \s -> s {optimizerContextPosition = Position x y z}
       return [motion]

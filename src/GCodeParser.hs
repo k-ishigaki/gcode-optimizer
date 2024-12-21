@@ -135,7 +135,7 @@ parseCenterOffset = do
   i <- optional $ symbol "I" *> parseDouble
   j <- optional $ symbol "J" *> parseDouble
   case (i, j) of
-    (Nothing, Nothing) -> fail "either i/j is required"
+    (Nothing, Nothing) -> fail "either i/j/k is required"
     -- IとJは指定されない場合は0となる（X/Y/Zとは違い前回の値を引き継がない）
     _ -> return $ CenterOffset (fromMaybe 0 i) (fromMaybe 0 j)
 
