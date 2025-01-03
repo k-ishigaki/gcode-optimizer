@@ -99,3 +99,7 @@ services:
                 BASE_IMAGE: "ghcr.io/k-ishigaki/hls-docker:1.3"
                 <<: *common-args
         <<: *common-options
+        command: >
+            sh -cex 'eval "$${PREPARE_COMMAND}" &&
+            sudo apt update && sudo apt install zlib1g-dev || true &&
+            sleep infinity'

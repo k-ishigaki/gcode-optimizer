@@ -1,4 +1,4 @@
-name:                haskell-template
+name:                gcode-optimizer
 version:             0.1.0.0
 #synopsis:
 #description:
@@ -20,6 +20,6 @@ dependencies:
   - mtl
 
 executables:
-  haskell-template:
+  gcode-optimizer:
     source-dirs:      src
     main:             Main.hs

@@ -1,10 +1,5 @@
 # gcode-optimizer
 
-## 準備
+## ビルド方法
 
-conduitをインストールために以下が必要（haskell-templateに含まれていない）
-
-```shell
-sudo apt update
-sudo apt install zlib1g-dev
-```
+`Shift + Ctrl + B`でビルドと実行ができます．
